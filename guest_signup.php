@@ -1,47 +1,49 @@
 <?php
+// Include the database configuration file
 include 'config.php';
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    // Check if POST data exists
-    if (isset($_POST['guestname']) && isset($_POST['email']) && isset($_POST['password'])) {
-        $guestname = trim($_POST['guestname']);
-        $email = trim($_POST['email']);
-        $password = $_POST['password'];
+    // Retrieve form inputs
+    $guestname = mysqli_real_escape_string($conn, $_POST['guestname']);
+    $email = mysqli_real_escape_string($conn, $_POST['email']);
+    $password = mysqli_real_escape_string($conn, $_POST['password']);
+    $confirm_password = mysqli_real_escape_string($conn, $_POST['confirm_password']);
 
-        // Hash the password before saving it
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
-
-        // Check if the guestname or email already exists
-        $sql_check = "SELECT * FROM guests WHERE guestname = ? OR email = ?";
-        $stmt_check = $conn->prepare($sql_check);
-        $stmt_check->bind_param("ss", $guestname, $email);
-        $stmt_check->execute();
-        $result_check = $stmt_check->get_result();
-
-        if ($result_check->num_rows > 0) {
-            echo "<p class='error-message'>Guestname or email already exists!</p>";
-        } else {
-            // Insert the new guest into the database
-            $sql = "INSERT INTO guests (guestname, email, password) VALUES (?, ?, ?)";
-            $stmt = $conn->prepare($sql);
-            $stmt->bind_param("sss", $guestname, $email, $hashed_password);
-
-            if ($stmt->execute()) {
-                echo "<p class='success-message'>Guest registered successfully!</p>";
-            } else {
-                echo "<p class='error-message'>Error: " . $stmt->error . "</p>";
-            }
-
-            $stmt->close();
-        }
-
-        $stmt_check->close();
-        $conn->close();
+    // Validate input fields
+    if (empty($guestname) || empty($email) || empty($password) || empty($confirm_password)) {
+        $error_message = "All fields are required!";
+    } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $error_message = "Invalid email format!";
+    } elseif ($password !== $confirm_password) {
+        $error_message = "Passwords do not match!";
     } else {
-        echo "<p class='error-message'>Please fill in all the fields.</p>";
+        // Check if the email already exists in the database
+        $check_query = "SELECT * FROM guests WHERE email = '$email'";
+        $result = mysqli_query($conn, $check_query);
+
+        if (mysqli_num_rows($result) > 0) {
+            $error_message = "Email already exists! Please use a different email.";
+        } else {
+            // Hash the password
+            $hashed_password = password_hash($password, PASSWORD_BCRYPT);
+
+            // Insert the new guest into the database
+            $insert_query = "INSERT INTO guests (guestname, password, email) VALUES ('$guestname', '$hashed_password', '$email')";
+
+            if (mysqli_query($conn, $insert_query)) {
+                $success_message = "Guest signed up successfully!";
+            } else {
+                $error_message = "Error: " . mysqli_error($conn);
+            }
+        }
     }
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -60,7 +62,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-family: Arial, sans-serif;
             background: url('UTMbg.png') no-repeat center center fixed;
             background-size: cover;
-            background-position: center;
             margin: 0;
             display: flex;
             justify-content: center;
@@ -75,17 +76,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             100% { opacity: 1; }
         }
 
-        .profile-icon {
-            color: #333;
-            font-size: 24px;
-            margin-right: 20px;
-        }
-
         .form-container {
             background-color: #fff;
-            width: 600px;
-            min-height: 450px;
-            padding: 30px;
+            width: 600px; /* Increased width */
+            min-height: 450px; /* Reduced height */
+            padding: 30px; /* Slightly reduced padding */
             border-radius: 10px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
             text-align: center;
@@ -97,40 +92,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             justify-content: space-between;
         }
 
+        @keyframes formFadeIn {
+            0% { opacity: 0; transform: scale(0.9); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
         .form-header {
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 40px; /* Increased from 20px */
+            margin-bottom: 20px; /* Reduced margin */
             flex-wrap: wrap;
-            gap: 20px; /* Added gap between elements */
         }
 
         .form-header img {
-            height: 50px;
-            margin: 0 15px; /* Increased from 10px */
+            height: 70px; /* Increase this value to make the logo larger */
+    max-width: 350px; /* Optionally set a max-width for proper scaling */
+    margin: 0 10px;
         }
 
         .form-header span {
             font-size: 18px;
             font-weight: bold;
-            color: rgb(43, 51, 52);
-            margin-top: 10px; /* Increased from 15px */
+            color: #333;
+            margin-top: 15px;
             width: 100%;
             text-align: center;
         }
 
         h2 {
-            margin-bottom: 30px; /* Increased from 20px */
-            color: rgb(37, 173, 197);
-            margin-top: 0px; /* Added negative margin to balance spacing */
+            margin-bottom: 20px; /* Reduced margin */
+            color: rgb(37, 173, 197); /* Updated color to match login page guest button */
         }
+
         .form-container input[type="text"],
         .form-container input[type="email"],
         .form-container input[type="password"] {
             width: 100%;
-            padding: 12px;
-            margin: 10px 0;
+            padding: 12px; /* Slightly reduced padding */
+            margin: 10px 0; /* Reduced margin */
             border: 1px solid #ccc;
             border-radius: 5px;
             font-size: 16px;
@@ -146,7 +146,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .form-container button {
-            background-color: rgb(37, 173, 197);
+            background-color: rgb(37, 173, 197); /* Updated to match login page guest button */
             color: #fff;
             padding: 12px;
             border: none;
@@ -160,7 +160,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .form-container button:hover {
-            background-color: rgb(10, 131, 153);
+            background-color: rgb(10, 131, 153); /* Updated hover color */
             transform: translateY(-1px);
         }
 
@@ -188,8 +188,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
         .back-button {
             display: block;
-            margin-top: 15px;
-            color: rgb(37, 173, 197);
+            margin-top: 15px; /* Reduced margin */
+            color: rgb(37, 173, 197); /* Updated color */
             text-decoration: none;
             font-size: 14px;
             transition: color 0.3s ease;
@@ -202,14 +202,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </style>
 </head>
 <body>
-
     <div class="form-container">
         <div class="form-header">
             <img src="UTM-LOGO-FULL.png" alt="UTM Logo">
-            <img src="Mjiit RoomMaster logo.png" alt="MJIIT Logo">
+        
             <span>Malaysia-Japan International Institute of Technology</span>
         </div>
         <h2>Guest Sign Up</h2>
+        <?php
+        if (isset($error_message)) {
+            echo "<p class='error-message'>$error_message</p>";
+        }
+        if (isset($success_message)) {
+            echo "<p class='success-message'>$success_message</p>";
+        }
+        ?>
         <form action="" method="POST">
             <input type="text" name="guestname" placeholder="Enter your name" required>
             <input type="email" name="email" placeholder="Enter your email" required>
