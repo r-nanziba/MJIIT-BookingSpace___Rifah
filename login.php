@@ -111,7 +111,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             align-items: flex-start;  /* Changed from center to flex-start */
             min-height: 100vh;
             animation: fadeIn 1s ease-in-out;
-            padding-top: 100px;  /* Added padding to move the form up */
+            padding-top: 80px;  /* Added padding to move the form up */
         }
 
         @keyframes fadeIn {
@@ -150,8 +150,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         .form-header img {
-            height: 50px;
-            margin: 0 10px;  /* Added horizontal margin */
+            height: 70px; /* Increase this value to make the logo larger */
+    max-width: 350px; /* Optionally set a max-width for proper scaling */
+    margin: 0 10px;
         }
 
         .form-header span {
@@ -233,20 +234,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-radius: 5px;
             display: inline-block;
         }
-</style>
+    </style>
 </head>
 <body>
-
-
     <!-- Form Container -->
     <div class="form-container">
-    <div class="form-header">
-        <div class="logo-container">
+        <div class="form-header">
             <img src="UTM-LOGO-FULL.png" alt="UTM Logo">
-            <img src="Mjiit RoomMaster logo.png" alt="MJIIT Logo">
+   
+            <span>Malaysia-Japan International Institute of Technology</span>
         </div>
-        <span><b>Malaysia-Japan International Institute of Technology</b></span>
-    </div>
         <h2>Sign In</h2>
         <?php
         if (isset($error_message)) {
@@ -258,10 +255,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             <input type="password" name="password" placeholder="Enter your password" required>
             <div class="button-container">
                 <button type="submit">Login</button>
-                <button type="button" class="guest-signup" onclick="location.href='guest_signup.php';">Guest Sign Up</button>
+                <button type="button" onclick="location.href='guest_signup.php';">Guest Sign Up</button>
             </div>
         </form>
     </div>
-
 </body>
 </html>
